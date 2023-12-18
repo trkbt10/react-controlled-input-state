@@ -1,6 +1,16 @@
-import { Option, Group } from "../examples/react-select";
+export type GroupsOrOptions = (Option | Group)[];
+export type Option = {
+  label: string;
+  value: string;
+};
+export type Group = {
+  label: string;
+  options: GroupsOrOptions;
+};
 
-export function traverse(collection: HTMLCollection) {
+export function traverseOptionsForHTMLSelectElement(
+  collection: HTMLCollection
+) {
   const options: (Option | Group)[] = [];
   const nodes = Array.from(collection);
 
@@ -8,7 +18,7 @@ export function traverse(collection: HTMLCollection) {
     if (node instanceof HTMLOptGroupElement) {
       options.push({
         label: node.label,
-        options: traverse(node.children),
+        options: traverseOptionsForHTMLSelectElement(node.children),
       });
       return;
     }

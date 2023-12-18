@@ -7,11 +7,13 @@ import { mergeConfig } from "vitest/config";
 const vitestConfig = defineVitestConfig({
   test: {
     globals: true,
+    setupFiles: ["./vitest.setup.ts"],
   },
 });
 const entryDir = path.resolve(__dirname, "src");
 const viteConfig = defineConfig({
   build: {
+    target: "modules",
     outDir: "dist",
     lib: {
       entry: path.resolve(entryDir, "index.tsx"),
@@ -36,6 +38,4 @@ const viteConfig = defineConfig({
   ],
 });
 
-export default mergeConfig(viteConfig, {
-  ...vitestConfig,
-});
+export default mergeConfig(viteConfig, vitestConfig);

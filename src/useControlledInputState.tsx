@@ -32,6 +32,11 @@ export function useControlledInputState<
   convert: C = passThroughConverter as C,
   areEqual: (a: S, b: S) => boolean = compareTwoState
 ) {
+  if (typeof value !== "undefined" && typeof onChange === "undefined") {
+    console.warn(
+      "You provided a `value` prop to a form field without an `onChange` handler. This will render a read-only field. If the field should be mutable use `defaultValue`. Otherwise, set either `onChange` or `readOnly`."
+    );
+  }
   const [currentValue, updateCurrentValue] = React.useState<S>(() => {
     return convert.to(value || defaultValue);
   });
@@ -67,7 +72,7 @@ export function useControlledInputState<
   }, [value, currentValue]);
   const localRef = React.useRef<SourceHTMLElement>();
   const convertedCurrentValue = React.useMemo(() => {
-    return convert.from(currentValue);
+    return convert.from(currentValue) || null;
   }, [currentValue]);
   const convertedPrevValue = usePrevious(convertedCurrentValue);
   React.useEffect(() => {
@@ -75,7 +80,10 @@ export function useControlledInputState<
     if (!onChange || !input) {
       return;
     }
-    if (convertedPrevValue === convertedCurrentValue || !convertedPrevValue) {
+    if (
+      convertedPrevValue === convertedCurrentValue ||
+      typeof convertedPrevValue === "undefined"
+    ) {
       return;
     }
     const changedValue = convertedCurrentValue?.toString() || "";

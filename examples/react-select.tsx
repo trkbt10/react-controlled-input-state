@@ -5,16 +5,10 @@ import {
   useControlledInputState,
 } from "../src/useControlledInputState";
 import { useMergedRef } from "../src/useMergedRef";
-import { traverse } from "../src/traverse";
-export type Option = {
-  label: string;
-  value: string;
-};
-export type Group = {
-  label: string;
-  options: GroupsOrOptions;
-};
-type GroupsOrOptions = (Option | Group)[];
+import {
+  traverseOptionsForHTMLSelectElement,
+  type Option,
+} from "../src/traverseOptionsForSelectElement";
 const converter: ValueConverter<Option> = {
   from: (value) => {
     return value?.value;
@@ -44,16 +38,18 @@ function useSyncSelectOptions(): [
     if (!(select instanceof HTMLSelectElement)) {
       return;
     }
-    const mutationObserver = new MutationObserver((mutations) => {
-      const items = traverse(select.children);
+    const mutateOptions = () => {
+      const items = traverseOptionsForHTMLSelectElement(select.children);
       setReactSelectOptions(items);
+    };
+    const mutationObserver = new MutationObserver((mutations) => {
+      mutateOptions();
     });
-    const items = traverse(select.children);
     mutationObserver.observe(select, {
       childList: true,
       subtree: true,
     });
-    setReactSelectOptions(items);
+    mutateOptions();
     return () => {
       mutationObserver.disconnect();
     };
@@ -96,7 +92,7 @@ export const Select = forwardRef<
 });
 Select.displayName = "Select";
 
-export const App = () => {
+export const ReactSelectExample = () => {
   const [selectedValue, setSelectedValue] = React.useState<string>();
 
   return (
