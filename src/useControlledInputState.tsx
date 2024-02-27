@@ -17,7 +17,7 @@ const passThroughConverter: ValueConverter<any> = {
 };
 export function useControlledInputState<
   SourceHTMLElement extends HTMLElement,
-  S extends unknown,
+  S extends unknown = any,
   C extends ValueConverter<S> = ValueConverter<S>
 >(
   {
@@ -70,14 +70,15 @@ export function useControlledInputState<
     }
     setCurrentValue(convertedValue);
   }, [value, currentValue]);
-  const localRef = React.useRef<SourceHTMLElement>();
+  const localRef = React.useRef<SourceHTMLElement>(null);
   const convertedCurrentValue = React.useMemo(() => {
-    return convert.from(currentValue) || null;
+    return convert.from(currentValue);
   }, [currentValue]);
-  const convertedPrevValue = usePrevious(convertedCurrentValue);
+  const convertedPrevValue = usePrevious(convertedCurrentValue || null);
+  // Must use layout effect to ensure that the input value is updated before the change event is dispatched.
   React.useEffect(() => {
     const input = localRef.current;
-    if (!onChange || !input) {
+    if (!input) {
       return;
     }
     if (
@@ -87,17 +88,55 @@ export function useControlledInputState<
       return;
     }
     const changedValue = convertedCurrentValue?.toString() || "";
-    const changeEvent = new Event("change", { bubbles: true });
     input.setAttribute("value", changedValue);
+    const changeEvent = new Event("change", {
+      bubbles: true,
+      composed: true,
+    });
     input.dispatchEvent(changeEvent);
   }, [convertedCurrentValue, localRef]);
-  const ref = useMergedRef<any>(forwardedRef, localRef);
+  const ref = useMergedRef(forwardedRef, localRef);
+  React.useEffect(() => {
+    const input = localRef.current;
+    if (!input) {
+      return;
+    }
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type !== "attributes") {
+          continue;
+        }
+        const changeEvent = new Event("input", {
+          composed: true,
+          bubbles: true,
+        });
+        mutation.target.dispatchEvent(changeEvent);
+      }
+    });
+    mutationObserver.observe(input, {
+      attributes: true,
+      childList: true,
+      attributeFilter: ["value"],
+    });
+    return () => {
+      mutationObserver.disconnect();
+    };
+  }, [localRef]);
+
   return [
     currentValue,
     setCurrentValue,
     {
       ...props,
-      onChange,
+
+      // We need to set the value to the converted value, not the current value.
+      // This is because the current value is the converted value, and we don't
+      defaultValue: undefined,
+      value:
+        typeof convertedCurrentValue === "undefined"
+          ? ""
+          : convertedCurrentValue.toString(),
+      onChange: onChange,
       ref,
       style: hideInputStyle,
       readOnly: true,
