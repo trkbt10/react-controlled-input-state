@@ -27,7 +27,7 @@ const viteConfig = defineConfig({
         return `[name].${format}`;
       },
     },
-    minify: isWatch ? false : "terser",
+    minify: isWatch ? false : true,
     emptyOutDir: isWatch ? false : true,
     rollupOptions: {
       external: ["react", "react-dom", "react/jsx-runtime"],
