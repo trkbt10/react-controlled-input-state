@@ -1,7 +1,8 @@
 import * as React from "react";
 import { RadioButton } from "./radio-button";
 import type { Option } from "../src/traverseOptionsForSelectElement";
-import { Select } from "./react-select";
+import { ReactSelectExample, Select } from "./react-select";
+import { ContentEditable } from "./contenteditable";
 export function App(props: React.PropsWithChildren<{}>) {
   const captureChange: React.ChangeEventHandler<HTMLInputElement> =
     React.useCallback((e) => {
@@ -12,6 +13,13 @@ export function App(props: React.PropsWithChildren<{}>) {
     { value: "strawberry", label: "Strawberry" },
     { value: "vanilla", label: "Vanilla" },
   ]);
+  const hash = React.useMemo(() => {
+    return window.location.hash.slice(1);
+  }, []);
+  console.log(hash);
+  if (hash === "/contentEditable") {
+    return <ContentEditable></ContentEditable>;
+  }
   return (
     <div>
       <RadioButton
@@ -20,6 +28,7 @@ export function App(props: React.PropsWithChildren<{}>) {
         onChange={captureChange}
         options={options}
       ></RadioButton>
+      {/*
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -41,16 +50,8 @@ export function App(props: React.PropsWithChildren<{}>) {
       >
         <input type="text" placeholder="taste" name="new_option" />
         <button type="submit">Add Option</button>
-      </form>
-      <Select>
-        {options.map((option) => {
-          return (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          );
-        })}
-      </Select>
+      </form> */}
+      <ReactSelectExample></ReactSelectExample>
     </div>
   );
 }

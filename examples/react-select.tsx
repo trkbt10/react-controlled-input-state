@@ -1,15 +1,13 @@
 import React, { forwardRef } from "react";
-import ReactSelect, { Options } from "react-select";
+import ReactSelect from "react-select";
 import {
   ValueConverter,
   useControlledInputState,
 } from "../src/useControlledInputState";
 import { useMergedRef } from "../src/useMergedRef";
-import {
-  traverseOptionsForHTMLSelectElement,
-  type Option,
-} from "../src/traverseOptionsForSelectElement";
-const converter: ValueConverter<Option> = {
+import { type Option } from "../src/traverseOptionsForSelectElement";
+import { useSelectElementOptions } from "../src/useSelectElementOptions";
+const converter: ValueConverter<Option | undefined> = {
   from: (value) => {
     return value?.value;
   },
@@ -20,51 +18,19 @@ const converter: ValueConverter<Option> = {
         label: value,
       };
     }
-    return {
-      value: "",
-      label: "",
-    };
+    return;
   },
 };
-function useSyncSelectOptions(): [
-  Options<any> | undefined,
-  React.RefObject<HTMLSelectElement>
-] {
-  const selectRef = React.useRef<HTMLSelectElement>(null);
-  const [reactSelectOptions, setReactSelectOptions] =
-    React.useState<Options<any>>();
-  React.useLayoutEffect(() => {
-    const select = selectRef.current;
-    if (!(select instanceof HTMLSelectElement)) {
-      return;
-    }
-    const mutateOptions = () => {
-      const items = traverseOptionsForHTMLSelectElement(select.children);
-      setReactSelectOptions(items);
-    };
-    const mutationObserver = new MutationObserver((mutations) => {
-      mutateOptions();
-    });
-    mutationObserver.observe(select, {
-      childList: true,
-      subtree: true,
-    });
-    mutateOptions();
-    return () => {
-      mutationObserver.disconnect();
-    };
-  }, [setReactSelectOptions]);
-  return [reactSelectOptions, selectRef] as const;
-}
 export const Select = forwardRef<
   HTMLSelectElement,
   JSX.IntrinsicElements["select"]
->(({ onChange, value, defaultValue, ...props }, forwardRef) => {
-  const [reactSelectOptions, selectRef] = useSyncSelectOptions();
+>(({ ...props }, forwardRef) => {
+  const selectRef = React.useRef<HTMLSelectElement>(null);
+  const options = useSelectElementOptions(selectRef);
   const ref = useMergedRef(selectRef, forwardRef);
   const [currentValue, setCurrentValue, bind] = useControlledInputState<
     HTMLSelectElement,
-    Option
+    Option | undefined
   >(
     {
       ...props,
@@ -72,18 +38,12 @@ export const Select = forwardRef<
     },
     converter
   );
-  const handleChange: React.ComponentProps<typeof ReactSelect>["onChange"] = (
-    newValue,
-    actionMeta
-  ) => {
-    setCurrentValue(newValue as any);
-  };
   return (
     <>
       <ReactSelect<any>
-        options={reactSelectOptions}
+        options={options}
         placeholder={props["aria-placeholder"]}
-        onChange={handleChange}
+        onChange={setCurrentValue}
         value={currentValue}
       ></ReactSelect>
       <select {...bind}>{props.children}</select>
@@ -98,13 +58,20 @@ export const ReactSelectExample = () => {
   return (
     <form
       onInput={(e) => {
+        console.log(e.currentTarget.value);
         if (e.currentTarget["name"] === "options") {
           setSelectedValue(e.currentTarget.value);
         }
       }}
     >
       <h1>React Select</h1>
-      <Select aria-placeholder="Select a value" name="options">
+      <Select
+        aria-placeholder="Select a value"
+        name="options"
+        onChange={(e) => {
+          console.log(e);
+        }}
+      >
         <optgroup label="Group 1">
           <option value="1">Option 1</option>
           <option value="2">Option 2</option>

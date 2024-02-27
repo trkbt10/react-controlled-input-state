@@ -29,6 +29,7 @@ export function RadioButton(
   return (
     <>
       <i id="element-stats">element: {controlled ? "" : "un"}controlled</i>
+      <br />
       <i id="current">{currentValue}</i>
       <div>
         <fieldset>
