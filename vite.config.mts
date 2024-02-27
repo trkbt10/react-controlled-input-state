@@ -10,7 +10,10 @@ const vitestConfig = defineVitestConfig({
     setupFiles: ["./vitest.setup.ts"],
   },
 });
+
 const entryDir = path.resolve(__dirname, "src");
+const isWatch = process.argv.includes("--watch");
+
 const viteConfig = defineConfig({
   build: {
     target: "modules",
@@ -24,7 +27,8 @@ const viteConfig = defineConfig({
         return `[name].${format}`;
       },
     },
-    minify: true,
+    minify: isWatch ? false : "terser",
+    emptyOutDir: isWatch ? false : true,
     rollupOptions: {
       external: ["react", "react-dom", "react/jsx-runtime"],
       output: {},
